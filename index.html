@@ -31,11 +31,7 @@
   button{font-family:inherit;font-weight:800;font-size:12px;border:0;border-radius:999px;padding:7px 12px;cursor:pointer;
          background:#2f7d3a;color:#fff}
   button.ghost{background:#e6efe6;color:#2f5d34}
-  button:focus-visible,a.btn:focus-visible{outline:2px solid #1d2a1f;outline-offset:2px}
-  a.btn{font-weight:800;font-size:12px;border-radius:999px;padding:7px 12px;text-decoration:none;background:#111;color:#fff;display:inline-block}
-  a.btn.ghost{background:#e6efe6;color:#2f5d34}
-  a.btn[hidden]{display:none}
-  #links{margin-top:8px}
+  button:focus-visible{outline:2px solid #1d2a1f;outline-offset:2px}
   #hint{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:rgba(20,30,22,.62);color:#fff;font-weight:800;font-size:15px;
         padding:10px 18px;border-radius:16px;text-align:center;pointer-events:none;transition:opacity .6s;line-height:1.5;z-index:6;
         animation:bob 1.6s ease-in-out infinite;white-space:nowrap}
@@ -80,10 +76,6 @@
     <button class="ghost" data-spot="board">掲示板</button>
     <button class="ghost" data-spot="seasons">四季の並木</button>
     <button class="ghost" data-spot="pond">池</button>
-  </div>
-  <div class="row" id="links">
-    <a id="share" class="btn" target="_blank" rel="noopener" hidden>𝕏 でシェア</a>
-    <a class="btn ghost" href="https://x.com/kamonegi610" target="_blank" rel="noopener">クランのX @kamonegi610</a>
   </div>
 </div>
 <div id="hint">👆 ドラッグでぐるっと回せます<br><small>カモにふれるとメンバー紹介が出ます</small></div>
@@ -800,15 +792,6 @@ if (coarse) hint.firstChild.textContent = '👆 指でぐるっと回せます';
 const hideHint = () => { hint.style.opacity = '0'; setTimeout(() => hint.remove(), 700); };
 renderer.domElement.addEventListener('pointerdown', hideHint, {once:true});
 setTimeout(() => { if (hint.isConnected) hideHint(); }, 7000);
-
-// share-to-X button, shown only on the public web copy
-if (/\.github\.io$/.test(location.hostname)) {
-  const share = document.getElementById('share');
-  const url = location.origin + location.pathname;
-  const text = 'Apexクラン「カモネギハウス」の家を3Dで作ってみた🦆🌿 ぐるっと回して遊べます';
-  share.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url) + '&hashtags=' + encodeURIComponent('カモネギハウス');
-  share.hidden = false;
-}
 
 // ---------- animation loop
 const clock = new THREE.Clock();
