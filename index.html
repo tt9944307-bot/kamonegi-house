@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>カモネギハウス 3D</title>
+<meta name="description" content="Apexクラン「カモネギハウス」の家を3Dで再現。ドラッグでぐるっと回して遊べます。">
+<meta property="og:type" content="website">
+<meta property="og:title" content="カモネギハウス 3D">
+<meta property="og:description" content="鴨がネギを背負ってやってくる、Apexクラン「カモネギハウス」の家。指でぐるっと回して遊べます。">
+<meta property="og:url" content="https://tt9944307-bot.github.io/kamonegi-house/">
+<meta property="og:image" content="https://tt9944307-bot.github.io/kamonegi-house/og.jpg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="カモネギハウス 3D">
+<meta name="twitter:description" content="鴨がネギを背負ってやってくる、Apexクラン「カモネギハウス」の家。指でぐるっと回して遊べます。">
+<meta name="twitter:image" content="https://tt9944307-bot.github.io/kamonegi-house/og.jpg">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦆</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@500;800&display=swap" rel="stylesheet">
+<style>
+  html,body{margin:0;height:100%;overflow:hidden;background:#9fd3f0;font-family:"M PLUS Rounded 1c",sans-serif;}
+  canvas{display:block;touch-action:none}
+  #ui{position:fixed;left:16px;top:16px;color:#1d2a1f;background:rgba(255,255,255,.85);backdrop-filter:blur(6px);
+      -webkit-backdrop-filter:blur(6px);border-radius:14px;padding:12px 14px;max-width:310px;box-shadow:0 6px 24px rgba(0,0,0,.15);}
+  #ui h1{margin:0 0 4px;font-size:20px;font-weight:800;letter-spacing:.04em}
+  #ui p{margin:0 0 10px;font-size:12px;line-height:1.6;color:#3c4a3e}
+  .row{display:flex;gap:6px;flex-wrap:wrap}
+  button{font-family:inherit;font-weight:800;font-size:12px;border:0;border-radius:999px;padding:7px 12px;cursor:pointer;
+         background:#2f7d3a;color:#fff}
+  button.ghost{background:#e6efe6;color:#2f5d34}
+  button:focus-visible,a.btn:focus-visible{outline:2px solid #1d2a1f;outline-offset:2px}
+  a.btn{font-weight:800;font-size:12px;border-radius:999px;padding:7px 12px;text-decoration:none;background:#111;color:#fff;display:inline-block}
+  a.btn.ghost{background:#e6efe6;color:#2f5d34}
+  a.btn[hidden]{display:none}
+  #links{margin-top:8px}
+  #hint{position:fixed;left:50%;bottom:28px;transform:translateX(-50%);background:rgba(20,30,22,.62);color:#fff;font-weight:800;font-size:15px;
+        padding:10px 18px;border-radius:16px;text-align:center;pointer-events:none;transition:opacity .6s;line-height:1.5;z-index:6;
+        animation:bob 1.6s ease-in-out infinite;white-space:nowrap}
+  #hint small{font-size:11px;font-weight:500;opacity:.85}
+  @keyframes bob{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,-6px)}}
+  #spots{margin-top:8px}
+  #tip{position:fixed;right:16px;bottom:16px;font-size:11px;color:#fff;background:rgba(0,0,0,.35);padding:6px 10px;border-radius:8px}
+  #label{position:fixed;pointer-events:none;background:#fff;color:#1d2a1f;font-size:12px;font-weight:800;padding:5px 9px;
+         border-radius:8px;box-shadow:0 3px 10px rgba(0,0,0,.2);display:none;white-space:nowrap;z-index:5}
+  #loading{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:18px;
+           background:#7cb9dc;z-index:10;text-align:center;padding:20px}
+  @media (max-width:560px){
+    #ui{left:10px;right:10px;top:10px;max-width:none;padding:10px 12px}
+    #ui p{display:none}
+    #tip{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="loading">カモネギハウスを建設中…</div>
+<div id="ui">
+  <h1>🦆 カモネギハウス</h1>
+  <p>ネギ畑と池のほとりに建つクランの家。作戦室の大画面では、今日もトリオでカスタム中。</p>
+  <div class="row">
+    <button id="night">🌙 夜にする</button>
+    <button id="rotate" class="ghost">⟳ 自動回転 ON</button>
+  </div>
+  <div class="row" id="spots">
+    <button class="ghost" data-spot="all">全景</button>
+    <button class="ghost" data-spot="house">家</button>
+    <button class="ghost" data-spot="board">大会掲示板</button>
+    <button class="ghost" data-spot="seasons">四季の並木</button>
+    <button class="ghost" data-spot="pond">池</button>
+  </div>
+  <div class="row" id="links">
+    <a id="share" class="btn" target="_blank" rel="noopener" hidden>𝕏 でシェア</a>
+    <a class="btn ghost" href="https://x.com/kamonegi610" target="_blank" rel="noopener">クランのX @kamonegi610</a>
+  </div>
+</div>
+<div id="hint">👆 ドラッグでぐるっと回せます<br><small>物にふれると説明が出ます</small></div>
+<div id="label"></div>
+<div id="tip">ドラッグで回転 ／ ホイール・ピンチで拡大 ／ 物にカーソルを合わせると説明</div>
+
+<script>
+  setTimeout(function(){
+    var l = document.getElementById('loading');
+    if (l) l.textContent = '読み込みに時間がかかっています。ページを再読み込みしてください。';
+  }, 15000);
+</script>
+<script type="importmap">
+{"imports":{
+  "three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+}}
+</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+const FONT = '"M PLUS Rounded 1c", "Hiragino Maru Gothic ProN", "Hiragino Sans", sans-serif';
+const ALL_TEXT = 'カモネギハウスKAMONEGI HOUSE鴨葱作戦室ネギ畑四季杯の並木ようこそ！親しき中にも礼儀あり主催トリオカスタムLIMIT BREAK0123456789/ 師走エントリーは抽選制─PSIDをDMで残り部隊SQUADCHAMPION!';
+try {
+  await Promise.race([
+    document.fonts.load(`800 48px "M PLUS Rounded 1c"`, ALL_TEXT),
+    new Promise(r => setTimeout(r, 3000)),
+  ]);
+} catch (e) {}
+
+// deterministic random so the layout is the same on every load
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;}}
+const rand = mulberry32(610);
+
+// ---------- renderer / scene / camera
+const renderer = new THREE.WebGLRenderer({antialias:true});
+const coarse = matchMedia('(pointer: coarse)').matches;
+renderer.setPixelRatio(Math.min(devicePixelRatio, coarse ? 1.75 : 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+const DAY_SKY = new THREE.Color('#9fd3f0'), NIGHT_SKY = new THREE.Color('#0f1630');
+scene.background = DAY_SKY.clone();
+scene.fog = new THREE.Fog(DAY_SKY.clone(), 70, 150);
+
+const camera = new THREE.PerspectiveCamera(45, innerWidth/innerHeight, 0.1, 500);
+camera.position.set(34, 26, 38);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(1, 3, 0);
+controls.enableDamping = true;
+controls.maxPolarAngle = Math.PI * 0.48;
+controls.minDistance = 6; controls.maxDistance = 130;
+// narrow (portrait) screens start further out so the whole island fits
+const fit = () => Math.min(2.2, Math.max(1, 1.3 / (innerWidth/innerHeight)));
+camera.position.sub(controls.target).multiplyScalar(fit()).add(controls.target);
+const fitFog = () => { scene.fog.near = 70*fit(); scene.fog.far = 150*fit(); };
+fitFog();
+controls.autoRotate = true; controls.autoRotateSpeed = 0.5;
+let fly = null;
+controls.addEventListener('start', () => { fly = null; });
+
+// ---------- lights
+const hemi = new THREE.HemisphereLight('#ffffff', '#5b7d3a', 0.9);
+scene.add(hemi);
+const sun = new THREE.DirectionalLight('#fff3d6', 2.2);
+sun.position.set(25, 40, 15);
+sun.castShadow = true;
+sun.shadow.mapSize.set(coarse ? 1024 : 2048, coarse ? 1024 : 2048);
+sun.shadow.bias = -0.0005; sun.shadow.normalBias = 0.03;
+Object.assign(sun.shadow.camera, {left:-40, right:40, top:40, bottom:-40, near:1, far:120});
+scene.add(sun);
+const moon = new THREE.DirectionalLight('#8fa8ff', 0);
+moon.position.set(-20, 30, -10); scene.add(moon);
+
+// ---------- helpers
+const M = (c, o={}) => new THREE.MeshStandardMaterial({color:c, roughness:0.8, ...o});
+const hoverables = [];
+function mesh(geo, mat, x=0, y=0, z=0, parent=scene){
+  const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z);
+  m.castShadow = true; m.receiveShadow = true; parent.add(m); return m;
+}
+// specific labels first, general ones last: a mesh keeps the first label it gets
+function tag(obj, text){
+  obj.traverse(o => { if (o.isMesh && !o.userData.label) { o.userData.label = text; hoverables.push(o); } });
+}
+function canvasTex(w, h, draw){
+  const c = document.createElement('canvas'); c.width = w; c.height = h;
+  const g = c.getContext('2d'); draw(g, w, h);
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8;
+  t.userData = {g, w, h}; return t;
+}
+function textTex(lines, {w=1024, h=512, bg='#fff8e7', sizes=[90], colors=['#2b2b2b'], border=null}={}){
+  return canvasTex(w, h, g => {
+    g.fillStyle = bg; g.fillRect(0, 0, w, h);
+    if (border) { const lw = Math.round(h*0.06); g.strokeStyle = border; g.lineWidth = lw; g.strokeRect(lw/2, lw/2, w-lw, h-lw); }
+    g.textAlign = 'center'; g.textBaseline = 'middle';
+    lines.forEach((t, i) => {
+      g.font = `800 ${sizes[Math.min(i, sizes.length-1)]}px ${FONT}`;
+      g.fillStyle = colors[Math.min(i, colors.length-1)];
+      g.fillText(t, w/2, h*(i+1)/(lines.length+1));
+    });
+  });
+}
+function faceMats(side, front){ return [side, side, side, side, front, side]; }
+
+// shared materials
+const wallMat = M('#f4ead6'), woodMat = M('#7a4e2d'), darkWood = M('#5a3820');
+const stoneMat = M('#9b8b75');
+
+// ---------- island
+mesh(new THREE.CylinderGeometry(34, 33.4, 0.8, 72), M('#7cc35a'), 0, -0.4, 0);
+mesh(new THREE.CylinderGeometry(33.4, 25, 7, 72), M('#8a6a44'), 0, -4.3, 0);
+const seaMat = M('#5fb3d9', {roughness:0.25, metalness:0.1});
+const sea = mesh(new THREE.CircleGeometry(400, 64), seaMat, 0, -2.4, 0);
+sea.rotation.x = -Math.PI/2; sea.castShadow = false;
+
+// stepping-stone path to the front door
+const pathMat = M('#d9c9a3');
+for (let i = 0; i < 9; i++) mesh(new THREE.CylinderGeometry(0.9, 0.95, 0.14, 14), pathMat, -2 + Math.sin(i*0.6)*0.8, 0.07, 6.5 + i*2.2);
+
+// ---------- duck factory (鴨 + 葱)
+function makeDuck({scale=1, body='#8a6a4a', head='#1f7a4a', negi=true}={}){
+  const d = new THREE.Group();
+  const bodyMat = M(body), headMat = M(head, {roughness:0.45});
+  const orange = M('#f2a23a'), white = M('#ffffff'), black = M('#151515');
+  const wingMat = M(new THREE.Color(body).multiplyScalar(0.78));
+  mesh(new THREE.SphereGeometry(1, 24, 16), bodyMat, 0, 1, 0, d).scale.set(1.25, 0.85, 0.95);
+  mesh(new THREE.SphereGeometry(0.62, 24, 16), headMat, 0.95, 1.9, 0, d);
+  mesh(new THREE.TorusGeometry(0.42, 0.07, 8, 24), white, 0.88, 1.5, 0, d).rotation.x = Math.PI/2;
+  mesh(new THREE.BoxGeometry(0.62, 0.16, 0.46), orange, 1.58, 1.82, 0, d);
+  [-0.37, 0.37].forEach(z => mesh(new THREE.SphereGeometry(0.1, 10, 8), black, 1.4, 2.06, z, d));
+  mesh(new THREE.ConeGeometry(0.4, 0.8, 8), bodyMat, -1.3, 1.3, 0, d).rotation.z = Math.PI/2.6;
+  [-0.4, 0.4].forEach(z => mesh(new THREE.BoxGeometry(0.4, 0.08, 0.32), orange, 0.25, 0.04, z, d));
+  [-1, 1].forEach(s => mesh(new THREE.SphereGeometry(0.6, 16, 10), wingMat, -0.15, 1.15, s*0.82, d).scale.set(1.3, 0.6, 0.35));
+  if (negi) { // the green onion it carries on its back
+    const ng = new THREE.Group(); ng.position.set(0.05, 1.55, 0.55); ng.rotation.set(0.25, 0, 0.7); d.add(ng);
+    mesh(new THREE.CylinderGeometry(0.13, 0.13, 1.4, 10), M('#f4f4ea'), 0, 0, 0, ng);
+    mesh(new THREE.CylinderGeometry(0.14, 0.06, 1.9, 10), M('#3fa34d'), 0, 1.6, 0, ng);
+    mesh(new THREE.CylinderGeometry(0.1, 0.04, 1.4, 10), M('#5cbf55'), 0.12, 1.3, 0.1, ng).rotation.z = -0.35;
+  }
+  d.scale.setScalar(scale);
+  return d;
+}
+
+// ---------- house
+const house = new THREE.Group(); scene.add(house);
+function gableGeo(w, d, h, alongX=false){
+  const s = new THREE.Shape(); s.moveTo(-w/2, 0); s.lineTo(0, h); s.lineTo(w/2, 0); s.closePath();
+  const g = new THREE.ExtrudeGeometry(s, {depth:d, bevelEnabled:false});
+  g.translate(0, 0, -d/2);
+  if (alongX) g.rotateY(Math.PI/2);
+  return g;
+}
+const windowMats = [];
+function windowAt(x, y, z, ry=0, w=2.2, h=1.8, parent=house){
+  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = ry; parent.add(g);
+  const mat = new THREE.MeshStandardMaterial({color:'#bfe3ff', emissive:'#ffcc66', emissiveIntensity:0, roughness:0.2});
+  windowMats.push(mat);
+  mesh(new THREE.BoxGeometry(w+0.3, h+0.3, 0.12), woodMat, 0, 0, 0, g);
+  mesh(new THREE.PlaneGeometry(w, h), mat, 0, 0, 0.07, g);
+  mesh(new THREE.BoxGeometry(0.08, h, 0.04), woodMat, 0, 0, 0.09, g);
+  mesh(new THREE.BoxGeometry(w, 0.08, 0.04), woodMat, 0, 0, 0.09, g);
+  return g;
+}
+
+// main block: two floors
+mesh(new THREE.BoxGeometry(8.6, 0.6, 8.6), stoneMat, -2, 0.3, 0, house);
+mesh(new THREE.BoxGeometry(8, 9, 8), wallMat, -2, 5.1, 0, house);
+mesh(new THREE.BoxGeometry(8.12, 0.25, 8.12), woodMat, -2, 5.1, 0, house);
+[[-6,-4],[-6,4],[2,-4],[2,4]].forEach(([x,z]) => mesh(new THREE.BoxGeometry(0.4, 9, 0.4), woodMat, x, 5.1, z, house));
+mesh(gableGeo(9.4, 9.4, 3.2), M('#24543a', {roughness:0.6}), -2, 9.6, 0, house);
+mesh(new THREE.BoxGeometry(1, 2.4, 1), M('#a35b3d'), -0.2, 12, -1.5, house);
+// entrance
+mesh(new THREE.BoxGeometry(2.2, 3.4, 0.2), darkWood, -0.8, 2.3, 4.05, house);
+mesh(new THREE.SphereGeometry(0.12, 12, 8), M('#e3b23c', {metalness:0.8, roughness:0.3}), -0.1, 2.3, 4.2, house);
+mesh(new THREE.BoxGeometry(3, 0.3, 1.1), M('#b9ab92'), -0.8, 0.15, 4.75, house);
+mesh(new THREE.CylinderGeometry(0.05, 0.05, 2.9, 8), darkWood, -0.8, 4.38, 4.26, house).rotation.z = Math.PI/2;
+const norenTex = canvasTex(520, 200, (g, w, h) => {
+  g.fillStyle = '#2f5a8a'; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#21456b'; g.fillRect(w/2-3, 34, 6, h);
+  g.fillStyle = '#fff'; g.font = `800 118px ${FONT}`; g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillText('鴨', w/4, h/2+8); g.fillText('葱', w*3/4, h/2+8);
+});
+const noren = mesh(new THREE.PlaneGeometry(2.6, 1.0), new THREE.MeshStandardMaterial({map:norenTex, side:THREE.DoubleSide}), -0.8, 3.85, 4.25, house);
+tag(noren, 'のれん：鴨と葱');
+// signboard between the floors
+const signTex = textTex(['カモネギハウス', 'KAMONEGI HOUSE'], {w:1024, h:250, bg:'#5a3820', sizes:[110, 46], colors:['#ffe7a8', '#d9b98a']});
+const sign = mesh(new THREE.BoxGeometry(6.6, 1.6, 0.25), faceMats(darkWood, new THREE.MeshStandardMaterial({map:signTex})), -2, 5.6, 4.2, house);
+tag(sign, '看板：カモネギハウス');
+// windows of the main block
+windowAt(-4.3, 3.3, 4.06); windowAt(-4.3, 7.6, 4.06); windowAt(-0.8, 7.6, 4.06);
+windowAt(-6.06, 3.3, 0, -Math.PI/2); windowAt(-6.06, 7.6, 0, -Math.PI/2);
+windowAt(-4.3, 3.3, -4.06, Math.PI); windowAt(-0.8, 7.6, -4.06, Math.PI);
+windowAt(2.06, 8.3, -1.8, Math.PI/2, 1.8, 1.4); windowAt(2.06, 8.3, 1.8, Math.PI/2, 1.8, 1.4);
+
+// wing: the game room (作戦室)
+const wing = new THREE.Group(); house.add(wing);
+mesh(new THREE.BoxGeometry(6.4, 0.6, 6.4), stoneMat, 5, 0.3, 0, wing);
+mesh(new THREE.BoxGeometry(6, 4.4, 6), wallMat, 5, 2.8, 0, wing);
+[[8,-3],[8,3]].forEach(([x,z]) => mesh(new THREE.BoxGeometry(0.4, 4.4, 0.4), woodMat, x, 2.8, z, wing));
+mesh(gableGeo(7, 6.8, 2, true), M('#d07a35', {roughness:0.6}), 5, 5.0, 0, wing);
+windowAt(8.06, 2.6, 0, Math.PI/2, 2.2, 1.6, wing);
+windowAt(5, 2.6, -3.06, Math.PI, 2.4, 1.6, wing);
+const wingSign = mesh(new THREE.BoxGeometry(2.4, 0.7, 0.12),
+  faceMats(woodMat, new THREE.MeshStandardMaterial({map:textTex(['作戦室'], {w:512, h:150, bg:'#5a3820', sizes:[96], colors:['#ffe7a8']})})),
+  5, 4.35, 3.06, wing);
+// the big screen in the game-room window, animated
+const screenTex = canvasTex(512, 284, () => {});
+let lastScreen = -1;
+function drawScreen(t){
+  const {g, w, h} = screenTex.userData;
+  const gr = g.createLinearGradient(0, 0, 0, h);
+  gr.addColorStop(0, '#ff8a4c'); gr.addColorStop(0.6, '#7a3d7a'); gr.addColorStop(1, '#2a1d4a');
+  g.fillStyle = gr; g.fillRect(0, 0, w, h);
+  g.fillStyle = '#3a2a5c'; g.beginPath(); g.moveTo(0, h); g.lineTo(0, 190); g.lineTo(90, 140); g.lineTo(170, 180);
+  g.lineTo(260, 120); g.lineTo(360, 175); g.lineTo(440, 135); g.lineTo(512, 170); g.lineTo(512, h); g.fill();
+  g.fillStyle = '#24193f'; g.fillRect(0, 232, w, h-232);
+  const cyc = (t*0.05) % 1;
+  const left = Math.max(1, 20 - Math.floor(cyc*21));
+  g.strokeStyle = 'rgba(120,200,255,0.9)'; g.lineWidth = 4;
+  g.beginPath(); g.arc(300, 170, 210*(1-cyc) + 26, 0, Math.PI*2); g.stroke();
+  g.fillStyle = 'rgba(0,0,0,0.35)'; g.fillRect(0, 0, w, 42);
+  g.fillStyle = '#fff'; g.font = `800 24px ${FONT}`; g.textBaseline = 'middle';
+  g.textAlign = 'left'; g.fillText('SQUAD 3/3', 14, 22);
+  g.textAlign = 'right'; g.fillText(`残り ${left} 部隊`, w-14, 22);
+  for (let i = 0; i < 3; i++) {
+    g.fillStyle = 'rgba(0,0,0,0.4)'; g.fillRect(14, 196+i*26, 150, 18);
+    g.fillStyle = ['#7be07b', '#6fd3ff', '#ffb238'][i];
+    g.fillRect(14, 196+i*26, 150*(0.55 + 0.45*Math.abs(Math.sin(t*0.7 + i*1.7))), 18);
+  }
+  if (left === 1) {
+    g.fillStyle = 'rgba(0,0,0,0.45)'; g.fillRect(0, 100, w, 80);
+    g.fillStyle = '#ffde59'; g.font = `800 54px ${FONT}`; g.textAlign = 'center'; g.fillText('CHAMPION!', w/2, 142);
+  }
+  screenTex.needsUpdate = true;
+}
+drawScreen(0);
+const scr = new THREE.Group(); scr.position.set(5, 2.6, 3.06); wing.add(scr);
+mesh(new THREE.BoxGeometry(3.9, 2.3, 0.12), woodMat, 0, 0, 0, scr);
+mesh(new THREE.PlaneGeometry(3.6, 2.0), new THREE.MeshStandardMaterial({color:'#000', emissive:'#fff', emissiveMap:screenTex, emissiveIntensity:1, roughness:0.3}), 0, 0, 0.07, scr);
+tag(scr, '作戦室の大画面：トリオでカスタム観戦中');
+
+// mascot statue perched on the game-room roof ridge
+const mascot = makeDuck({scale:1.3});
+mascot.position.set(6, 6.9, 0); mascot.rotation.y = -Math.PI/3; wing.add(mascot);
+tag(mascot, '屋根の守り神：ネギを背負った鴨');
+tag(wing, '作戦室（ゲーム部屋）：ここでトリオを組んで出撃');
+tag(house, 'カモネギハウス本館');
+
+// chimney smoke
+const puffs = [];
+for (let i = 0; i < 6; i++) {
+  const p = new THREE.Mesh(new THREE.SphereGeometry(0.45, 10, 8), new THREE.MeshStandardMaterial({color:'#f2f2f2', transparent:true, opacity:0.6, roughness:1, depthWrite:false}));
+  p.userData.phase = i/6; scene.add(p); puffs.push(p);
+}
+
+// ---------- negi field (ネギ畑)
+const field = new THREE.Group(); field.position.set(-17, 0, 6); scene.add(field);
+mesh(new THREE.BoxGeometry(11, 0.3, 12), M('#6b4a2e'), 0, 0.15, 0, field);
+const ridgeMat = M('#7d5836');
+for (let r = 0; r < 5; r++) mesh(new THREE.BoxGeometry(1.2, 0.25, 11.4), ridgeMat, -4.4 + r*2.2, 0.4, 0, field);
+const negiWhite = M('#f4f4ea'), negiGreen = M('#3fa34d'), negiGreen2 = M('#5cbf55');
+const negiStalks = [];
+for (let r = 0; r < 5; r++) for (let c = 0; c < 9; c++) {
+  const g = new THREE.Group(); g.position.set(-4.4 + r*2.2, 0.52, -5 + c*1.25); field.add(g);
+  mesh(new THREE.CylinderGeometry(0.14, 0.16, 0.9, 8), negiWhite, 0, 0.45, 0, g);
+  mesh(new THREE.CylinderGeometry(0.1, 0.03, 1.7, 8), negiGreen, 0.05, 1.7, 0, g).rotation.z = 0.15;
+  mesh(new THREE.CylinderGeometry(0.09, 0.03, 1.4, 8), negiGreen2, -0.08, 1.55, 0.05, g).rotation.z = -0.25;
+  g.userData.phase = rand()*6; negiStalks.push(g);
+}
+mesh(new THREE.BoxGeometry(0.15, 1.4, 0.15), woodMat, 0, 0.7, 6.55, field);
+mesh(new THREE.PlaneGeometry(3, 1.2), new THREE.MeshStandardMaterial({map:textTex(['ネギ畑'], {w:512, h:200, sizes:[110], border:'#7a4e2d'}), side:THREE.DoubleSide}), 0, 1.8, 6.6, field);
+tag(field, 'ネギ畑：鴨が背負うネギはここで育つ');
+
+// ---------- pond (鴨の池)
+const pond = new THREE.Group(); pond.position.set(16, 0, 10); scene.add(pond);
+const pondMat = M('#4aa3d6', {roughness:0.15, metalness:0.2, transparent:true, opacity:0.92});
+const water = mesh(new THREE.CircleGeometry(6.5, 48), pondMat, 0, 0.05, 0, pond);
+water.rotation.x = -Math.PI/2; water.castShadow = false;
+const rockMat = M('#9a9a94', {flatShading:true});
+for (let i = 0; i < 22; i++) { const a = i/22*Math.PI*2; mesh(new THREE.DodecahedronGeometry(0.5 + rand()*0.4), rockMat, Math.cos(a)*6.8, 0.2, Math.sin(a)*6.8, pond); }
+const padMat = M('#4f9a3c');
+for (let i = 0; i < 6; i++) mesh(new THREE.CylinderGeometry(0.6, 0.6, 0.05, 16), padMat, Math.cos(i*1.3)*4, 0.08, Math.sin(i*1.3)*3.2, pond);
+tag(water, '鴨の池');
+const pondDucks = [];
+['#1f7a4a', '#2a6f8f', '#6a3f8a'].forEach((h, i) => {
+  const d = makeDuck({scale:0.45, head:h, negi:i === 0}); pond.add(d); pondDucks.push(d);
+  tag(d, '池でひと休み中の鴨');
+});
+
+// ---------- four seasonal trees (四季杯の並木)
+const seasons = new THREE.Group(); seasons.position.set(-4, 0, -17); scene.add(seasons);
+const seasonData = [
+  {name:'春 ─ 皐月杯（第2回）', leaf:'#f7b6cf', x:-9},
+  {name:'夏 ─ 次の開催を待つ季節', leaf:'#3e9b3f', x:-3},
+  {name:'秋 ─ 霜月（→ LIMIT BREAK 12/12）', leaf:'#e0682b', x:3},
+  {name:'冬 ─ 師走 12/5（抽選エントリー）', leaf:'#eef4f8', x:9, snow:true},
+];
+seasonData.forEach(s => {
+  const t = new THREE.Group(); t.position.x = s.x; seasons.add(t);
+  mesh(new THREE.CylinderGeometry(0.35, 0.5, 3.2, 10), woodMat, 0, 1.6, 0, t);
+  const leafMat = M(s.leaf, {flatShading:true});
+  [[0,4,0,2.2],[1.1,3.5,0.4,1.4],[-1,3.6,-0.3,1.5],[0,5.3,0,1.4]].forEach(([x,y,z,r]) => mesh(new THREE.IcosahedronGeometry(r, 1), leafMat, x, y, z, t));
+  if (s.snow) mesh(new THREE.CylinderGeometry(1.8, 1.8, 0.1, 24), M('#ffffff'), 0, 0.05, 0, t);
+  tag(t, `四季の木：${s.name}`);
+});
+// falling petals / leaves / snow (spring, autumn, winter)
+const PN = 210, fallers = [0, 2, 3];
+const pp = new Float32Array(PN*3), pc = new Float32Array(PN*3);
+for (let i = 0; i < PN; i++) {
+  const s = seasonData[fallers[i % 3]], col = new THREE.Color(s.leaf);
+  pp.set([s.x + (rand()-0.5)*5, rand()*7, (rand()-0.5)*5], i*3); pc.set([col.r, col.g, col.b], i*3);
+}
+const particleGeo = new THREE.BufferGeometry();
+particleGeo.setAttribute('position', new THREE.BufferAttribute(pp, 3));
+particleGeo.setAttribute('color', new THREE.BufferAttribute(pc, 3));
+const particles = new THREE.Points(particleGeo, new THREE.PointsMaterial({size:0.22, vertexColors:true})); seasons.add(particles);
+mesh(new THREE.BoxGeometry(0.15, 2, 0.15), woodMat, 0, 1, 3.95, seasons);
+mesh(new THREE.PlaneGeometry(5, 1.4), new THREE.MeshStandardMaterial({map:textTex(['四季杯の並木'], {w:700, h:200, sizes:[100], border:'#7a4e2d'}), side:THREE.DoubleSide}), 0, 2, 4, seasons);
+
+// ---------- tournament board (大会掲示板)
+const board = new THREE.Group(); board.position.set(14, 0, -9); board.rotation.y = 0.4; scene.add(board);
+[-3.6, 3.6].forEach(x => mesh(new THREE.BoxGeometry(0.4, 6.6, 0.4), woodMat, x, 3.3, -0.1, board));
+mesh(new THREE.BoxGeometry(8.2, 0.5, 0.7), darkWood, 0, 6.85, 0, board);
+const boardTex = canvasTex(1024, 640, (g, w, h) => {
+  g.fillStyle = '#1a1630'; g.fillRect(0, 0, w, h);
+  const gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, '#ff4d6d'); gr.addColorStop(1, '#ffb238');
+  g.fillStyle = gr; g.fillRect(0, 0, w, 14); g.fillRect(0, h-14, w, 14);
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.fillStyle = '#cfc6ff'; g.font = `800 40px ${FONT}`; g.fillText('カモネギハウス主催 トリオカスタム', w/2, 70);
+  g.fillStyle = gr; g.font = `800 120px ${FONT}`; g.fillText('LIMIT BREAK', w/2, 190);
+  g.fillStyle = '#fff'; g.font = `800 70px ${FONT}`; g.fillText('12 / 12', w/2, 300);
+  g.fillStyle = '#3a3360'; g.fillRect(90, 362, w-180, 4);
+  g.fillStyle = '#e8f1f7'; g.font = `800 62px ${FONT}`; g.fillText('四季杯 師走　12 / 5', w/2, 440);
+  g.fillStyle = '#bdb6e6'; g.font = `800 36px ${FONT}`; g.fillText('エントリーは抽選制 ─ PSIDをDMで', w/2, 525);
+});
+const boardFace = mesh(new THREE.BoxGeometry(7.6, 4.75, 0.3),
+  faceMats(woodMat, new THREE.MeshStandardMaterial({map:boardTex, emissive:'#ffffff', emissiveMap:boardTex, emissiveIntensity:0.15})), 0, 4.2, 0, board);
+tag(board, '大会掲示板：LIMIT BREAK 12/12・四季杯 師走 12/5');
+const boardLight = new THREE.SpotLight('#ffd9a0', 0, 20, 0.6, 0.5); boardLight.position.set(0, 8.5, 4); boardLight.target = boardFace; board.add(boardLight);
+// a trio holding a strategy meeting in front of the board
+const trio = new THREE.Group(); trio.position.set(15.2, 0, -5.6); trio.rotation.y = 1.97; scene.add(trio);
+['#1f7a4a', '#2a6f8f', '#b8462e'].forEach((h, i) => { const d = makeDuck({scale:0.6, head:h, negi:i !== 1}); d.position.z = (i-1)*1.7; trio.add(d); });
+tag(trio, 'トリオ：大会に向けて作戦会議中');
+
+// ---------- supply-style crate with a light beam
+const crate = new THREE.Group(); crate.position.set(-14, 0, -12); crate.rotation.y = 0.3; scene.add(crate);
+mesh(new THREE.BoxGeometry(2.4, 1.6, 1.6), M('#3b4a5c', {metalness:0.5, roughness:0.4}), 0, 0.8, 0, crate);
+const gold = M('#e9b23a', {metalness:0.4});
+mesh(new THREE.BoxGeometry(2.5, 0.25, 1.7), gold, 0, 1.2, 0, crate);
+mesh(new THREE.BoxGeometry(2.5, 0.25, 1.7), gold, 0, 0.3, 0, crate);
+const beamMat = new THREE.MeshBasicMaterial({color:'#6fd3ff', transparent:true, opacity:0.25, depthWrite:false});
+const beam = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.6, 18, 16, 1, true), beamMat); beam.position.y = 10.6; crate.add(beam);
+tag(crate, '物資ボックス：中身はたぶんネギ');
+
+// ---------- hot-air balloon
+const balloon = new THREE.Group(); balloon.position.set(-14, 18, -6); scene.add(balloon);
+const envTex = canvasTex(512, 256, (g) => { const cols = ['#2f7d3a', '#f4ead6', '#f2a23a', '#f4ead6']; for (let i = 0; i < 16; i++) { g.fillStyle = cols[i%4]; g.fillRect(i*32, 0, 32, 256); } });
+mesh(new THREE.SphereGeometry(3, 32, 24), M('#fff', {map:envTex}), 0, 0, 0, balloon).scale.set(1, 1.15, 1);
+mesh(new THREE.BoxGeometry(1.4, 1, 1.4), woodMat, 0, -5, 0, balloon);
+const ropeMat = M('#333');
+[[-0.6,-0.6],[0.6,-0.6],[-0.6,0.6],[0.6,0.6]].forEach(([x,z]) => mesh(new THREE.CylinderGeometry(0.03, 0.03, 2.6), ropeMat, x, -3.6, z, balloon));
+tag(balloon, '気球：ここから降下開始');
+
+// ---------- welcome sign & mailbox
+const kanban = new THREE.Group(); kanban.position.set(2.8, 0, 6.6); kanban.rotation.y = -0.25; scene.add(kanban);
+[-1.1, 1.1].forEach(x => mesh(new THREE.BoxGeometry(0.14, 1.1, 0.14), woodMat, x, 0.55, 0, kanban));
+mesh(new THREE.BoxGeometry(2.7, 1.45, 0.12),
+  faceMats(woodMat, new THREE.MeshStandardMaterial({map:textTex(['ようこそ！', '親しき中にも礼儀あり'], {w:768, h:400, sizes:[96, 62], colors:['#2f7d3a', '#5a3820'], border:'#7a4e2d'})})),
+  0, 1.75, 0, kanban);
+tag(kanban, '立て看板：クランの合言葉');
+const mailbox = new THREE.Group(); mailbox.position.set(-4.3, 0, 6.6); scene.add(mailbox);
+const red = M('#d23b2a', {roughness:0.45});
+mesh(new THREE.BoxGeometry(0.5, 0.2, 0.5), M('#555'), 0, 0.1, 0, mailbox);
+mesh(new THREE.CylinderGeometry(0.42, 0.42, 1.4, 20), red, 0, 0.9, 0, mailbox);
+mesh(new THREE.SphereGeometry(0.44, 20, 10, 0, Math.PI*2, 0, Math.PI/2), red, 0, 1.6, 0, mailbox);
+mesh(new THREE.BoxGeometry(0.4, 0.06, 0.05), M('#151515'), 0, 1.3, 0.42, mailbox);
+tag(mailbox, 'ポスト：師走のエントリーはPSIDをDMで（抽選）');
+
+// ---------- lamps
+const lampLights = [], bulbMats = [];
+const poleMat = M('#333');
+[[-4.8, 9], [0.8, 9], [-4.8, 16], [0.8, 16]].forEach(([x, z]) => {
+  mesh(new THREE.CylinderGeometry(0.1, 0.12, 3, 8), poleMat, x, 1.5, z);
+  const bm = new THREE.MeshStandardMaterial({color:'#fff2c4', emissive:'#ffcc66', emissiveIntensity:0.1}); bulbMats.push(bm);
+  mesh(new THREE.SphereGeometry(0.35, 12, 10), bm, x, 3.2, z);
+  const pl = new THREE.PointLight('#ffcc77', 0, 10); pl.position.set(x, 3.2, z); scene.add(pl); lampLights.push(pl);
+});
+const houseLight = new THREE.PointLight('#ffbb66', 0, 22); houseLight.position.set(-1, 4, 7); scene.add(houseLight);
+
+// ---------- members (アクティブメンバー)
+const memberDefs = [
+  {c:[3.5, 11.5], r:2.2, s:0.35,  head:'#1f7a4a', body:'#8a6a4a', label:'メンバー：玄関前をおさんぽ中'},
+  {c:[-6, 12],    r:2.2, s:-0.3,  head:'#2a6f8f', body:'#7d6a55', label:'メンバー：師走のエントリーDMを出しに来た'},
+  {c:[-10, -3],   r:2,   s:0.4,   head:'#6a3f8a', body:'#8a6a4a', label:'メンバー：ネギの育ち具合をチェック中'},
+  {c:[0, -9],     r:2.5, s:-0.28, head:'#b8462e', body:'#7a5f44', label:'メンバー：裏庭でエイム練習の休憩中'},
+  {c:[6, -12],    r:2,   s:0.33,  head:'#d1a21f', body:'#8a6a4a', label:'メンバー：四季の木を見に来た'},
+  {c:[16, 10],    r:8.4, s:0.12,  head:'#2b2b2b', body:'#6e5a48', label:'メンバー：池のまわりをジョギング中'},
+];
+const members = memberDefs.map((m, i) => {
+  const d = makeDuck({scale:0.55, head:m.head, body:m.body, negi:i % 2 === 0});
+  scene.add(d); tag(d, m.label);
+  return {...m, d, off:i*1.3, hop:rand()*6};
+});
+
+// ---------- fence (gap where the path meets it)
+const railMat = woodMat, FN = 48, FR = 29, gapPost = 12;
+for (let i = 0; i < FN; i++) {
+  const a = i/FN*Math.PI*2;
+  if (i !== gapPost) mesh(new THREE.BoxGeometry(0.22, 1.1, 0.22), railMat, Math.cos(a)*FR, 0.55, Math.sin(a)*FR);
+  if (i === gapPost - 1 || i === gapPost) continue;
+  const mid = a + Math.PI/FN, rr = FR*Math.cos(Math.PI/FN), len = 2*FR*Math.sin(Math.PI/FN);
+  const rail = mesh(new THREE.BoxGeometry(len, 0.12, 0.08), railMat, Math.cos(mid)*rr, 0.8, Math.sin(mid)*rr);
+  rail.rotation.y = -mid - Math.PI/2;
+}
+
+// ---------- bushes (kept clear of everything else)
+const rects = [[-7.5,9.5,-5.5,6], [-23.5,-10.5,-1,13.5], [-4,1,5,25.5]];
+const circles = [[16,10,9.6],[-13,-17,3.2],[-7,-17,3.2],[-1,-17,3.2],[5,-17,3.2],[-4,-13,1.8],[14,-9,5],[15.2,-5.6,2.8],
+                 [-14,-12,2.5],[2.8,6.6,1.8],[-4.3,6.6,1.2],[3.5,11.5,3.4],[-6,12,3.4],[-10,-3,3.2],[0,-9,3.7],[6,-12,3.2]];
+const blocked = (x, z) => rects.some(([a,b,c,d]) => x > a && x < b && z > c && z < d) || circles.some(([cx,cz,r]) => (x-cx)**2 + (z-cz)**2 < r*r);
+const bushMats = [M('#4f9a3c', {flatShading:true}), M('#5fae45', {flatShading:true})];
+for (let placed = 0, tries = 0; placed < 18 && tries < 600; tries++) {
+  const a = rand()*Math.PI*2, r = 18 + rand()*9.5, x = Math.cos(a)*r, z = Math.sin(a)*r;
+  if (blocked(x, z)) continue;
+  const s = 0.7 + rand()*0.8; mesh(new THREE.IcosahedronGeometry(s, 0), bushMats[placed % 2], x, s*0.6, z); placed++;
+}
+
+// ---------- sky things
+const cloudMat = new THREE.MeshBasicMaterial({color:'#f6f9fc', fog:false});
+const cloudDay = new THREE.Color('#f6f9fc'), cloudNight = new THREE.Color('#2a3358');
+const clouds = [];
+for (let i = 0; i < 8; i++) {
+  const c = new THREE.Group(); c.userData = {a:rand()*Math.PI*2, r:140 + rand()*40}; c.position.y = 45 + rand()*15; c.scale.setScalar(2.6); scene.add(c);
+  for (let j = 0; j < 4; j++) { const m = new THREE.Mesh(new THREE.SphereGeometry(2 + rand()*1.5, 12, 10), cloudMat); m.position.set(j*2.2 - 3, rand(), rand()); c.add(m); }
+  clouds.push(c);
+}
+const starGeo = new THREE.BufferGeometry(), sp = new Float32Array(700*3);
+for (let i = 0; i < 700; i++) {
+  const u = rand()*2 - 1, th = rand()*Math.PI*2, s = Math.sqrt(1 - u*u);
+  sp.set([Math.cos(th)*s*190, Math.abs(u)*190 + 12, Math.sin(th)*s*190], i*3);
+}
+starGeo.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+const stars = new THREE.Points(starGeo, new THREE.PointsMaterial({color:'#fff', size:0.9, transparent:true, opacity:0, fog:false}));
+scene.add(stars);
+const ffGeo = new THREE.BufferGeometry(), fp = new Float32Array(40*3);
+for (let i = 0; i < 40; i++) fp.set([16 + (rand()-0.5)*15, 0.5 + rand()*3, 10 + (rand()-0.5)*15], i*3);
+ffGeo.setAttribute('position', new THREE.BufferAttribute(fp, 3));
+const fireflies = new THREE.Points(ffGeo, new THREE.PointsMaterial({color:'#e8ff7a', size:0.3, transparent:true, opacity:0}));
+scene.add(fireflies);
+
+// ---------- UI: day / night, rotation, camera spots
+let night = false, nightT = 0;
+const nightBtn = document.getElementById('night'), rotBtn = document.getElementById('rotate');
+nightBtn.onclick = () => { night = !night; nightBtn.textContent = night ? '☀️ 昼にする' : '🌙 夜にする'; };
+const setRotate = on => { controls.autoRotate = on; rotBtn.textContent = on ? '⟳ 自動回転 ON' : '⟳ 自動回転 OFF'; };
+rotBtn.onclick = () => setRotate(!controls.autoRotate);
+const spots = {
+  all:     {p:[34, 26, 38],   t:[1, 3, 0]},
+  house:   {p:[10, 8.5, 23],  t:[1, 5, 0]},
+  board:   {p:[20, 7.5, 5],   t:[14, 4.2, -9]},
+  seasons: {p:[-4, 13, -5.5], t:[-4, 3.5, -17]},
+  pond:    {p:[27, 9, 24],    t:[16, 1, 10]},
+};
+document.querySelectorAll('[data-spot]').forEach(b => b.onclick = () => {
+  const s = spots[b.dataset.spot];
+  fly = {fromP:camera.position.clone(), fromT:controls.target.clone(), toP:new THREE.Vector3(...s.p).sub(new THREE.Vector3(...s.t)).multiplyScalar(b.dataset.spot === 'all' ? fit() : 1).add(new THREE.Vector3(...s.t)), toT:new THREE.Vector3(...s.t), k:0};
+  setRotate(false);
+});
+
+// hover / tap labels
+const ray = new THREE.Raycaster(), mouse = new THREE.Vector2(), label = document.getElementById('label');
+let hideTimer = null;
+function pick(e){
+  mouse.set(e.clientX/innerWidth*2 - 1, -(e.clientY/innerHeight)*2 + 1);
+  ray.setFromCamera(mouse, camera);
+  const hit = ray.intersectObjects(hoverables, false)[0];
+  if (hit) {
+    label.textContent = hit.object.userData.label; label.style.display = 'block';
+    label.style.left = Math.max(8, Math.min(e.clientX + 14, innerWidth - label.offsetWidth - 8)) + 'px';
+    label.style.top = Math.min(e.clientY + 14, innerHeight - 40) + 'px';
+  } else label.style.display = 'none';
+  if (e.pointerType !== 'mouse') { clearTimeout(hideTimer); hideTimer = setTimeout(() => label.style.display = 'none', 2500); }
+}
+renderer.domElement.addEventListener('pointermove', e => { if (e.pointerType === 'mouse') pick(e); });
+renderer.domElement.addEventListener('pointerdown', e => { if (e.pointerType !== 'mouse') pick(e); });
+renderer.domElement.addEventListener('pointerleave', () => { label.style.display = 'none'; });
+
+addEventListener('resize', () => { camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); fitFog(); });
+document.getElementById('loading').remove();
+
+// first-visit hint: fades on the first touch / click, or after a few seconds
+const hint = document.getElementById('hint');
+if (coarse) hint.firstChild.textContent = '👆 指でぐるっと回せます';
+const hideHint = () => { hint.style.opacity = '0'; setTimeout(() => hint.remove(), 700); };
+renderer.domElement.addEventListener('pointerdown', hideHint, {once:true});
+setTimeout(() => { if (hint.isConnected) hideHint(); }, 7000);
+
+// share-to-X button, shown only on the public web copy
+if (/\.github\.io$/.test(location.hostname)) {
+  const share = document.getElementById('share');
+  const url = location.origin + location.pathname;
+  const text = 'Apexクラン「カモネギハウス」の家を3Dで作ってみた🦆🌿 ぐるっと回して遊べます';
+  share.href = 'https://twitter.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url) + '&hashtags=' + encodeURIComponent('カモネギハウス');
+  share.hidden = false;
+}
+
+// ---------- animation loop
+const clock = new THREE.Clock();
+const tmp = new THREE.Color();
+const seaDay = new THREE.Color('#5fb3d9'), seaNight = new THREE.Color('#1b2c55');
+const pondDay = new THREE.Color('#4aa3d6'), pondNight = new THREE.Color('#1f3b6e');
+const hemiDay = new THREE.Color('#ffffff'), hemiNight = new THREE.Color('#8090c0');
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.1), t = clock.elapsedTime;
+
+  // day <-> night
+  nightT += ((night ? 1 : 0) - nightT) * Math.min(1, dt*2.5);
+  tmp.copy(DAY_SKY).lerp(NIGHT_SKY, nightT); scene.background.copy(tmp); scene.fog.color.copy(tmp);
+  sun.intensity = 2.2*(1 - nightT); moon.intensity = 0.6*nightT;
+  hemi.intensity = 0.9 - 0.6*nightT; hemi.color.copy(hemiDay).lerp(hemiNight, nightT);
+  seaMat.color.copy(seaDay).lerp(seaNight, nightT); pondMat.color.copy(pondDay).lerp(pondNight, nightT);
+  windowMats.forEach(m => m.emissiveIntensity = 1.6*nightT);
+  bulbMats.forEach(m => m.emissiveIntensity = 0.1 + 2.5*nightT);
+  lampLights.forEach(l => l.intensity = 25*nightT);
+  houseLight.intensity = 30*nightT; boardLight.intensity = 80*nightT;
+  stars.material.opacity = nightT;
+  cloudMat.color.copy(cloudDay).lerp(cloudNight, nightT);
+  fireflies.material.opacity = nightT*(0.6 + 0.4*Math.sin(t*3));
+  beamMat.opacity = 0.18 + 0.08*Math.sin(t*2) + 0.25*nightT;
+
+  // creatures
+  pondDucks.forEach((d, i) => {
+    const a = t*0.25 + i*2.1, r = 3.2 + i*0.7;
+    d.position.set(Math.cos(a)*r, 0.02 + Math.sin(t*2 + i)*0.03, Math.sin(a)*r*0.8);
+    d.rotation.y = Math.atan2(-0.8*Math.cos(a), -Math.sin(a));
+  });
+  members.forEach(m => {
+    const a = t*m.s + m.off;
+    m.d.position.set(m.c[0] + Math.cos(a)*m.r, Math.max(0, Math.sin(t*6 + m.hop))*0.22, m.c[1] + Math.sin(a)*m.r);
+    m.d.rotation.y = Math.atan2(-m.s*Math.cos(a), -m.s*Math.sin(a));
+    m.d.rotation.z = Math.sin(t*8 + m.hop)*0.06;
+  });
+  trio.children.forEach((d, i) => d.position.y = Math.max(0, Math.sin(t*3 + i*2))*0.12);
+  mascot.rotation.y = -Math.PI/3 + Math.sin(t*0.8)*0.15;
+
+  // scenery
+  negiStalks.forEach(g => g.rotation.z = Math.sin(t*1.5 + g.userData.phase)*0.05);
+  balloon.position.y = 18 + Math.sin(t*0.6)*0.8; balloon.rotation.y = t*0.1;
+  clouds.forEach((c, i) => { const u = c.userData; u.a += dt*(0.008 + i*0.001); c.position.x = Math.cos(u.a)*u.r; c.position.z = Math.sin(u.a)*u.r; c.rotation.y = -u.a; });
+  puffs.forEach(p => {
+    const k = (t*0.18 + p.userData.phase) % 1;
+    p.position.set(-0.2 + k*1.5 + Math.sin(t + p.userData.phase*6)*0.2, 13.3 + k*5, -1.5 - k*0.5);
+    p.scale.setScalar(0.6 + k*1.6); p.material.opacity = 0.6*(1 - k);
+  });
+  const pa = particles.geometry.attributes.position;
+  for (let i = 0; i < PN; i++) {
+    let y = pa.getY(i) - dt*(i % 3 === 2 ? 0.5 : 0.9); if (y < 0) y = 7;
+    pa.setY(i, y); pa.setX(i, pa.getX(i) + Math.sin(t + i)*dt*0.3);
+  }
+  pa.needsUpdate = true;
+  if (t - lastScreen > 0.12) { drawScreen(t); lastScreen = t; }
+
+  // camera fly-to
+  if (fly) {
+    fly.k = Math.min(1, fly.k + dt*0.8); const e = 1 - Math.pow(1 - fly.k, 3);
+    camera.position.lerpVectors(fly.fromP, fly.toP, e); controls.target.lerpVectors(fly.fromT, fly.toT, e);
+    if (fly.k >= 1) fly = null;
+  }
+  controls.update();
+  renderer.render(scene, camera);
+});
+</script>
+</body>
+</html>
